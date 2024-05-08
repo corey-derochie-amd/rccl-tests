@@ -10,7 +10,6 @@ function display_help()
     echo "./install [-h|--help] "
     echo "    [-h|--help] Prints this help message."
     echo "    [-m|--mpi] Build RCCL-tests with MPI support. (see --mpi_home below.)"
-    echo "    [--enable_mscclpp] Build RCCL-tests with MSCCLPP support."
     echo "    [--rccl_home] Specify custom path for RCCL installation (default: /opt/rocm/rccl)"
     echo "    [--mpi_home] Specify path to your MPI installation."
 }
@@ -21,7 +20,6 @@ function display_help()
 run_tests=false
 build_release=true
 mpi_enabled=false
-mscclpp_enabled=false
 rccl_dir=/opt/rocm/rccl
 mpi_dir=""
 # #################################################
@@ -31,7 +29,7 @@ mpi_dir=""
 # check if we have a modern version of getopt that can handle whitespace and long parameters
 getopt -T
 if [[ $? -eq 4 ]]; then
-    GETOPT_PARSE=$(getopt --name "${0}" --longoptions help,mpi,enable_mscclpp,test,rccl_home:,mpi_home: --options hmt -- "$@")
+    GETOPT_PARSE=$(getopt --name "${0}" --longoptions help,mpi,test,rccl_home:,mpi_home: --options hmt -- "$@")
 else
     echo "Need a new version of getopt"
     exit 1
@@ -53,9 +51,6 @@ while true; do
 	-m|--mpi)
 	    mpi_enabled=true
 	    shift ;;
-    --enable_mscclpp)
-        mscclpp_enabled=true
-        shift ;;
 	-t|--test)
 	    run_tests=true
 	    shift ;;
@@ -90,22 +85,16 @@ build_dir=./build
 # ensure a clean build environment
 rm -rf ${build_dir}
 
-mpi_args=""
 if ($mpi_enabled); then
     if [[ ${mpi_dir} == "" ]]; then
         echo "MPI flag enabled but path to MPI installation not specified.  See --mpi_home command line argument."
         exit 1
     else
-        mpi_args="MPI=1 MPI_HOME=${mpi_dir}"
+        make NCCL_HOME=${rccl_dir} CUSTOM_RCCL_LIB=${rccl_dir}/lib/librccl.so MPI=1 MPI_HOME=${mpi_dir} -j$(nproc)
     fi
+else
+    make NCCL_HOME=${rccl_dir} CUSTOM_RCCL_LIB=${rccl_dir}/lib/librccl.so -j$(nproc)
 fi
-
-mscclpp_args=""
-if ($mscclpp_enabled); then
-    mscclpp_args="MSCCLPP=1"
-fi
-
-make NCCL_HOME=${rccl_dir} CUSTOM_RCCL_LIB=${rccl_dir}/lib/librccl.so ${mscclpp_args} ${mpi_args} -j$(nproc)
 check_exit_code "$?"
 
 # Optionally, run tests if they're enabled.

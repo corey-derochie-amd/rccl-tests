@@ -53,10 +53,6 @@ HIPCUFLAGS += -DMPI_SUPPORT -I/usr/include/mpich -I/usr/include/x86_64-linux-gnu
 HIPLDFLAGS += -L/usr/lib -lmpich
 endif
 
-ifeq ($(MSCCLPP), 1)
-HIPCUFLAGS += -DENABLE_MSCCLPP
-endif
-
 LIBRARIES += rccl
 HIPLDFLAGS   += $(LIBRARIES:%=-l%)
 
